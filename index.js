@@ -6,12 +6,12 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+// const client   = require('./queue')
 const MONGODB_URI = process.env.MONGODB_URI;
 const cors = require('cors')
 const bodyParser = require('body-parser')
 const cloudinary = require('cloudinary').v2;
 const nodemailer = require('nodemailer');
-const pushToRedis = require('./queue')
 const  {HfInference} = require("@huggingface/inference");
 const HF_TOKEN = process.env.HF_TOKEN;
 const EMAIL =  process.env.EMAIL
@@ -20,10 +20,10 @@ const CLOUD_NAME = process.env.CLOUD_NAME;
 const CLOUD_API_KEY =  process.env.CLOUD_API_KEY
 const CLOUD_API_SECRET = process.env.CLOUD_API_SECRET
 const HF_MODEL = process.env.HF_MODEL
+const UPSTACK_TOKEN = process.env.UPSTACK_TOKEN
 
 
-
-console.log("CLOUD_API_SECRET "+HF_TOKEN)
+// console.log("CLOUD_API_SECRET "+HF_TOKEN)
 
 
 
@@ -343,14 +343,23 @@ const emailHtmlContent = `<!DOCTYPE html>
 `
 
 
+// app.use(express.json()); // required to parse JSON bodies
+// app.use(express.urlencoded({ extended: true })); // parses application/x-www-form-urlencoded
 
+
+// app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' })); // allows base64 image & JSON
+app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.use(cors({
-  origin: 'http://localhost:8080'
+  origin: 'https://shivamforge.vercel.app', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
 }));
 
-app.use(bodyParser.json({ limit: '10mb' })); // allow base64 image
+
+
 
 cloudinary.config({
   cloud_name: CLOUD_NAME,
@@ -389,15 +398,65 @@ app.post('/send-email', (req, res) => {
 });
 
 
-app.post('/send-queue', async (req,res)=>{
+app.post('/push-queue', async (req,res)=>{
+  // const det = req.body.toString()
+  // console.log("dett "+det)
+
+  const payload = req.body
+  // console.log("req.body.data "+payload.name)
+
+  // console.log("redisClient "+client)
+
     try{
-        console.log("send msg to queue")
-        await pushToRedis(req.body.data)
-        res.json({msg:"message push to queue" , success:"True"})
+        // console.log("send msg to queue")
+        // await pushToRedis(data)
+
+        // const connRedis = await redisClient.connect()
+        // console.log("connRedis "+connRedis)
+        // console.log("queue msg "+data)
+        // await redisClient.lPush("contractDetails" , data)
+
+        // const payload = {
+        //   name:"harshalbhai",
+        //   email: "harshalupwork07@gmail.com",
+        //   phone : "9537325355",
+        //   message: "okkkkkkkkkkkkkkkkkkk"   
+        // }
+
+
+        
+        const redisPush = await fetch(`https://dashing-hen-49086.upstash.io/lpush/contractDetails/${encodeURIComponent(JSON.stringify(payload))}`, {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer '+UPSTACK_TOKEN
+          }
+        });
+        const data = await redisPush.json() 
+        console.log("redisPush result"+data)
+        
+        
+        res.json({data , success:"True"})
+        // res.json({redisClient , success:"True"})
     }catch(e){
         res.json({msg:"err to send msg" , success:"False"})
     }
 
+})
+
+
+app.post('/pop-queue', async (req,res)=>{
+  try{
+    const response = await fetch('https://dashing-hen-49086.upstash.io/rpop/contractDetails', {
+        method: 'POST',
+        headers: {
+            Authorization: 'Bearer '+UPSTACK_TOKEN
+        }
+    });
+    const data = await response.json();
+    res.json(data)
+  }catch(e){
+    res.json({msg:e})
+  }
 })
 
 
@@ -580,6 +639,21 @@ app.get('/products/:id', async (req, res) => {
   const id  = req.params.id
   try {
     const products = await Product.findById(id);
+    res.status(200).json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch products.' });
+  }
+});
+
+app.put('/products/:id', async (req, res) => {
+  const id  = req.params.id
+  console.log("id of backend "+id)
+  // console.log("okkk "+req.body.payload.name)
+  const data = req.body?.payload
+  console.log("data "+data)
+  try {
+    const products = await Product.findByIdAndUpdate(id,data);
     res.status(200).json(products);
   } catch (error) {
     console.error(error);
