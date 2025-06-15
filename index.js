@@ -353,7 +353,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.use(cors({
-  origin: 'https://shivamforge.vercel.app', 
+  origin: 'https://www.shivamforge.com', 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
