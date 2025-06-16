@@ -15,23 +15,29 @@ setInterval(async () => {
       const data = JSON.parse(json.result);
       console.log("Worker got data:", data);
 
-      await fetch('https://shivamforge-backend.onrender.com/contacts', {
+      const contactsResponse = await fetch('https://shivamforge-backend.onrender.com/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
 
-      await fetch('https://shivamforge-backend.onrender.com/send-email' , {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(
-          {
-            recipient : data.email,
-          }
-        ) 
-      })
+      const contactsResponseData = await contactsResponse.json()
+      console.log("contactsResponseData "+contactsResponseData?.success)
+      if(contactsResponseData?.success == 'True'){
+
+        await fetch('https://shivamforge-backend.onrender.com/send-email' , {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(
+            {
+              recipient : data.email,
+            }
+          ) 
+        })
+
+      }
 
       // Optional: trigger email API
     }
