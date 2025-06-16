@@ -39,10 +39,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.use(cors({
-  origin: ['https://shivamforge.com','https://www.shivamforge.com'],
+  origin: ['https://www.shivamforge.com' , 'https://shivamforge.com'], 
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 }));
+
 
 
 
